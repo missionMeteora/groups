@@ -37,5 +37,21 @@ func TestGroups(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if gs, err = g.Set("0", "admins"); err != nil {
+		t.Fatalf("Error encountered while setting: %v", err)
+	}
+
+	if len(gs) != 2 {
+		t.Fatalf("Invalid number of groups, expected %v and received %v", 2, len(gs))
+	}
+
+	if !g.Has("0", "users") {
+		t.Fatal("users group does not exist when it should")
+	}
+
+	if !g.Has("0", "admins") {
+		t.Fatal("admins group does not exist when it should")
+	}
+
 	return
 }
