@@ -79,23 +79,34 @@ func (g *Groups) Has(id, group string) (has bool) {
 }
 
 // Set will set a group to a given id
-func (g *Groups) Set(id, group string) (gs []string, err error) {
-	var gm groupMap
-	err = g.db.Update(func(txn turtle.Txn) (err error) {
+func (g *Groups) Set(id string, groups ...string) (gs []string, err error) {
+	var (
+		gm   groupMap
+		errs errors.ErrorList
+	)
+
+	errs.Push(g.db.Update(func(txn turtle.Txn) (err error) {
 		if gm, err = g.get(txn, id); err != nil {
 			gm = make(groupMap)
 			err = nil
 		}
 
-		if !gm.Set(group) {
-			return ErrGroupAlreadySet
+		for _, group := range groups {
+			if !gm.Set(group) {
+				errs.Push(ErrGroupAlreadySet)
+				err = nil
+				return
+			}
+
+			if err = txn.Put(id, gm.Dup()); err != nil {
+				return
+			}
 		}
 
-		return txn.Put(id, gm.Dup())
-	})
+		return
+	}))
 
-	gs = gm.Slice()
-	return
+	return gm.Slice(), errs.Err()
 }
 
 // Remove will remove a group from a given id
